@@ -1,1 +1,2 @@
-export const URI = "data.json";
+export const URI = "data/dataChannel.json";
+

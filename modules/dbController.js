@@ -1,7 +1,9 @@
 const indb = window.indexedDB;
+const DB = "videosCache";
+const STORE = "videosStore";
 
-const openDB = (onSuccess, onError) => {
-    let DBOpenReq = indb.open("videosCache", 1);
+export const openDB = (onSuccess, onError) => {
+    let DBOpenReq = indb.open(DB, 1);
 
     DBOpenReq.addEventListener("error", (err) => {
         console.log("Error", err);
@@ -11,9 +13,10 @@ const openDB = (onSuccess, onError) => {
     DBOpenReq.addEventListener("upgradeneeded", (ev) => {
         let db = ev.target.result;
         console.log("Upgrade", db);
-        if (!db.objectStoreNames.contains("videosStore")) {
-            db.createObjectStore("videosStore", {
-                keyPath: "id"
+        if (!db.objectStoreNames.contains(DB)) {
+            db.createObjectStore(STORE, {
+                keyPath: null,
+                autoIncrement: true
             });
         }
     })
@@ -26,18 +29,18 @@ const openDB = (onSuccess, onError) => {
 };
 
 // Agregar Datos
-openDB(async (db) => {
-    let data = await getData();
-    let { items } = data;
+// openDB(async (db) => {
+//     let data = await getData();
+//     let { items } = data;
 
-    const transaction = db.transaction(['videosStore'], 'readwrite');
-    const objectStore = transaction.objectStore('videosStore');
-    items.forEach(e => {
-        const request = objectStore.add(e);
-    });
-}, (err) => {
-    console.error("Error al abrir la base de datos:", err);
-});
+//     const transaction = db.transaction(['videosStore'], 'readwrite');
+//     const objectStore = transaction.objectStore('videosStore');
+//     items.forEach(e => {
+//         const request = objectStore.add(e);
+//     });
+// }, (err) => {
+//     console.error("Error al abrir la base de datos:", err);
+// });
 
 // Obtener Datos getAll
 const getAll = () => {
@@ -140,4 +143,26 @@ const deleteOne = (id) => {
     });
 }
 
+// Validar datos DB
+export const indbIsEmpty = () => {
+    return new Promise((resolve, reject) => {
+        openDB(async (db) => {
+            const transaction = db.transaction([STORE], "readonly");
+            const objectStore = transaction.objectStore(STORE);
+            const countRequest = objectStore.count();
 
+            countRequest.onsuccess = (e) => {
+                console.log(e.target.readyState);
+                let countRows = e.target.result;
+                resolve(countRows === 0);
+            };
+            countRequest.onerror = (e) => {
+                console.error("Error al obtener el registro:", e.target.error);
+                reject(e.target.error);
+            };
+        }, (err) => {
+            console.error("Error al abrir la base de datos:", err);
+            reject(err);
+        });
+    });
+}
